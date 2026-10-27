@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111f">
+<title>JARVIS — Personal Assistant</title>
+<style>
+:root{color-scheme:dark;--bg:#07111f;--panel:#0d1c2e;--line:#183a55;--cyan:#64e5ff;--muted:#9bb4c9;--text:#eaf7ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% 0%,#12304a 0,#07111f 55%);color:var(--text);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+main{max-width:760px;margin:auto;padding:24px 16px 50px}.top{text-align:center;padding:16px 0 20px}
+.kicker{letter-spacing:.28em;font-size:11px;color:var(--cyan)}h1{font-size:32px;letter-spacing:.12em;margin:10px 0 6px} .sub{color:var(--muted);font-size:14px}
+.orb-wrap{display:flex;justify-content:center;padding:18px 0 24px}.orb{width:144px;height:144px;border-radius:50%;border:1px solid #64e5ff88;display:grid;place-items:center;box-shadow:0 0 28px #28bde633,inset 0 0 28px #28bde622;position:relative}
+.orb:before,.orb:after{content:"";position:absolute;border:1px solid #64e5ff55;border-radius:50%;inset:10px}.orb:after{inset:-8px;border-style:dashed;animation:spin 24s linear infinite}.core{width:66px;height:66px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#d9fbff,#37c5ef 40%,#12618e 75%);box-shadow:0 0 30px #40dfff88}
+@keyframes spin{to{transform:rotate(360deg)}}.orb.listening{animation:pulse 1.3s ease-in-out infinite}@keyframes pulse{50%{box-shadow:0 0 50px #28d9ff88,inset 0 0 36px #28d9ff55}}
+.panel{background:#0b1a2bd9;border:1px solid var(--line);border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 10px 30px #0002}.status{font-size:12px;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase}.reply{min-height:64px;line-height:1.5;margin-top:9px;white-space:pre-wrap}.row{display:flex;gap:9px;flex-wrap:wrap}button{border:1px solid #28617d;background:#102b41;color:var(--text);border-radius:12px;padding:13px 15px;font-size:14px;cursor:pointer}button.primary{background:linear-gradient(135deg,#0f7597,#164a70);border-color:#4cdfff;font-weight:700;flex:1}button:active{transform:scale(.99)}input{width:100%;background:#071523;border:1px solid #23465f;border-radius:12px;padding:14px;color:var(--text);font-size:16px;margin:8px 0}h2{font-size:16px;margin:0 0 8px}.small{font-size:12px;color:var(--muted);line-height:1.5}.task{display:flex;gap:10px;align-items:center;border-top:1px solid #18354b;padding:10px 0}.task span{flex:1;overflow-wrap:anywhere}.task button{padding:7px 10px}.done{text-decoration:line-through;color:#7991a5}.footer{text-align:center;color:#66859b;font-size:11px;margin-top:22px}
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <div class="kicker">PERSONAL AI SYSTEM</div>
+    <h1>J.A.R.V.I.S.</h1>
+    <div class="sub">Just A Rather Very Intelligent Assistant · Starter build</div>
+  </header>
+  <div class="orb-wrap"><div class="orb" id="orb" aria-label="Assistant status"><div class="core"></div></div></div>
+  <section class="panel">
+    <div class="status" id="status">SYSTEM ONLINE · LOCAL DEMO</div>
+    <div class="reply" id="reply">Hello. I'm your Jarvis starter. Try saying “What can you do?”, “Add task book haircut models”, or type a message below. This first version runs in your browser and does not yet connect to a cloud AI model.</div>
+    <div class="row">
+      <button class="primary" id="listen">🎙 Start speaking</button>
+      <button id="stop">Stop voice</button>
+      <button id="speak">🔊 Read response</button>
+    </div>
+    <div class="small" style="margin-top:10px">Voice recognition depends on your browser and iOS version. If the microphone button isn't supported, use the text box.</div>
+  </section>
+  <section class="panel">
+    <h2>Talk to Jarvis</h2>
+    <form id="chatForm">
+      <input id="message" autocomplete="off" placeholder="Type a message or command…" aria-label="Message to Jarvis">
+      <div class="row"><button class="primary" type="submit">Send command</button><button type="button" id="clearChat">Clear response</button></div>
+    </form>
+  </section>
+  <section class="panel">
+    <h2>Task memory</h2>
+    <div class="small">Tasks are saved only in this browser on this device. They won't sync to other devices or run automatically yet.</div>
+    <form id="taskForm">
+      <input id="taskInput" autocomplete="off" placeholder="Add a task…" aria-label="New task">
+      <button class="primary" type="submit" style="width:100%">＋ Save task</button>
+    </form>
+    <div id="tasks"></div>
+  </section>
+  <section class="panel">
+    <h2>What this version can do</h2>
+    <div class="small">• Speak responses aloud using your browser<br>• Try voice input if Safari supports it<br>• Save and complete a local task list<br>• Respond to a few built-in commands<br><br><b>Not connected yet:</b> general AI reasoning, web research, computer control, notifications, or background jobs. Those require a secure AI/backend connection and permissions.</div>
+  </section>
+  <div class="footer">JARVIS STARTER · Prototype 0.1 · No API keys required</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let lastReply="Hello. I'm your Jarvis starter.";
+function setReply(text, speak=false){lastReply=text;$('reply').textContent=text;if(speak) say(text);}
+function say(text){if(!('speechSynthesis' in window)){ $('status').textContent='VOICE OUTPUT NOT SUPPORTED'; return;} window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text);u.rate=1.02;u.pitch=.92;window.speechSynthesis.speak(u);}
+function loadTasks(){try{return JSON.parse(localStorage.getItem('jarvis_tasks')||'[]')}catch(e){return []}}
+function saveTasks(tasks){localStorage.setItem('jarvis_tasks',JSON.stringify(tasks));renderTasks()}
+function renderTasks(){const tasks=loadTasks();$('tasks').innerHTML='';if(!tasks.length){$('tasks').innerHTML='<div class="small" style="padding-top:12px">No tasks saved yet.</div>';return}tasks.forEach((t,i)=>{const row=document.createElement('div');row.className='task';const label=document.createElement('span');label.textContent=t.text; if(t.done)label.className='done';const done=document.createElement('button');done.textContent=t.done?'Undo':'Done';done.onclick=()=>{const a=loadTasks();a[i].done=!a[i].done;saveTasks(a)};const del=document.createElement('button');del.textContent='Delete';del.onclick=()=>{const a=loadTasks();a.splice(i,1);saveTasks(a)};row.append(label,done,del);$('tasks').append(row)})}
+function addTask(text){const clean=text.trim();if(!clean)return false;const a=loadTasks();a.push({text:clean,done:false});saveTasks(a);return true}
+function respond(raw){const m=raw.trim();const low=m.toLowerCase();if(!m)return;
+if(low.includes('what can you do')||low==='help'){setReply('I can respond to a few built-in commands, speak my replies, and save tasks on this device. Try “add task call the supplier”, “show my tasks”, or “what time is it?”. I am not connected to a general AI model yet.');}
+else if(low.startsWith('add task ')){const t=m.slice(9).trim();if(addTask(t))setReply('Task saved: '+t,true);else setReply('Tell me what task to save.');}
+else if(low.startsWith('remember task ')){const t=m.slice(14).trim();if(addTask(t))setReply('I saved that task on this device: '+t,true);}
+else if(low.includes('show my tasks')||low.includes('list tasks')){const a=loadTasks();setReply(a.length?'Here are your tasks: '+a.map((t,i)=>(i+1)+'. '+t.text+(t.done?' (done)':'')).join('; '):'You have no saved tasks.',true);}
+else if(low.includes('what time is it')||low==='time'){setReply('The time on this device is '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+'.',true);}
+else if(low.includes('hello')||low.includes('hey jarvis')||low==='hi'){setReply('Hello. I'm online and ready. What would you like to work on?',true);}
+else if(low.includes('clear completed tasks')){saveTasks(loadTasks().filter(t=>!t.done));setReply('Completed tasks cleared.',true);}
+else{setReply('I received: “'+m+'”. This starter is not connected to a full AI brain yet, so I can only handle built-in commands. The next stage is to connect a secure AI service.');}
+}
+$('chatForm').addEventListener('submit',e=>{e.preventDefault();const m=$('message').value;$('message').value='';respond(m)});
+$('taskForm').addEventListener('submit',e=>{e.preventDefault();const v=$('taskInput').value.trim();if(addTask(v)){$('taskInput').value='';setReply('Task saved: '+v,true)}});
+$('speak').onclick=()=>say(lastReply);
+$('clearChat').onclick=()=>setReply('Response cleared. What would you like to do?');
+let recognition=null;
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(SR){recognition=new SR();recognition.lang='en-AU';recognition.interimResults=false;recognition.maxAlternatives=1;recognition.onstart=()=>{$('orb').classList.add('listening');$('status').textContent='LISTENING · SPEAK NOW'};recognition.onend=()=>{$('orb').classList.remove('listening');$('status').textContent='SYSTEM ONLINE · LOCAL DEMO'};recognition.onerror=e=>{setReply('Microphone issue: '+e.error+'. You can still type commands below.');};recognition.onresult=e=>{const transcript=e.results[0][0].transcript;$('message').value=transcript;respond(transcript);};$('listen').onclick=()=>{try{recognition.start()}catch(e){setReply('Voice input is already active or unavailable. Try again or type your message.')}};$('stop').onclick=()=>recognition.stop();}
+else{$('listen').onclick=()=>setReply('This browser does not expose speech recognition to this page. Try typing a message, or open the deployed page in a browser that supports speech recognition.');$('stop').onclick=()=>{};}
+renderTasks();
+</script>
+</body>
+</html>
